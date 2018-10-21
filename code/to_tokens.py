@@ -1,5 +1,6 @@
 import spacy
 import sys
+import re
 
 class Tokenizer:
 
@@ -20,15 +21,21 @@ class Tokenizer:
         doc = self.language_models[language](text)
         tokens = []
         for token in doc:
+            if token.is_space:
+                continue
             if delete_hashtags and token.i > 0 and doc[token.i - 1].text == '#':
                 continue
-            if delete_punctuation and token.is_punct:
+            if delete_punctuation and (token.is_punct or token.text == '\n'):
                 continue
             if delete_urls and token.like_url:
                 continue
             if delete_mentions and token.text.startswith('@'):
                 continue
-            tokens.append(token.text.lower())
+            clean_text = token.text.lower()
+            clean_text = re.sub('(\\n|\\t)+','',clean_text)
+            if clean_text.strip() == '':
+                continue
+            tokens.append(clean_text)
         return tokens   
 
     def tokenize_list_of_texts(self, list_of_texts, language, verbose=True, **kwargs):

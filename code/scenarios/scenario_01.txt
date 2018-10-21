@@ -1,0 +1,4 @@
+{'train':['es'], 'test':'es'}
+{'train':['es','en'], 'test':'es'}
+{'train':['es','it'], 'test':'es'}
+{'train':['es','en','it'], 'test':'es'}
