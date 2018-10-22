@@ -6,6 +6,7 @@ format_dataset = '{label}_{XorY}_{settype}.txt'
 history_path = 'train_history/'
 model_path = 'best_models/models_{timeday}/'
 results_file = 'results/results_{timeday}.txt'
+config_file = 'results/results_{timeday}.config.txt'
 
 vector_size = 300
 limit_vectors = 2000
@@ -39,6 +40,7 @@ vector_files = defaultdict(str)
 
 timeday = datetime.now().strftime('%Y_%m_%d_%H_%M')
 results_file = results_file.format(timeday=timeday)
+config_file = config_file.format(timeday=timeday)
 model_path = model_path.format(timeday=timeday)
 if not os.path.exists(model_path):
     os.makedirs(model_path)

@@ -143,6 +143,24 @@ class HS_Model():
             acc = running_acc/len(data_loader)
         return loss, acc
 
+    def evaluate_metrics(self, data_loader, metrics=['accuracy','precision','recall','f1']):
+        out_metrics = []
+        Ys, Ypreds = [], []
+        with torch.no_grad():
+            for batch in data_loader:
+                self.net = self.net.to(self.device).eval()
+                X, Y, lengths = batch
+                X, Y = X.to(self.device), Y.to(self.device)
+                Y_pred = self.net(X, lengths)
+                Ys.append(Y)
+                Ypreds.append(Y_pred)
+            Y = torch.cat(Ys)
+            Y_pred = torch.cat(Ypreds)
+            for metric in metrics:
+                out_metrics.append(score(Y_pred, Y, metric))
+        return out_metrics
+
+
 
     def __log_detailed_history(self, epoch,iteration,running_loss, running_acc):
         self.detailed_train_history['train_loss'].append(running_loss/(iteration+1))
@@ -188,7 +206,7 @@ class HS_Model():
             f'total time:{total_time:2.0f}s, ' +\
             f'time/update:{total_time/iterations:.2f}s, ' +\
             f'loss:{running_loss/iterations:02.4f}, ' +\
-            f'accuracy: {running_acc/iterations*100:02.2f}%'
+            f'accuracy:{running_acc/iterations*100:02.2f}%'
         if dev_loss and dev_acc:
             out_info_epoch += ', ' +\
                 f'dev_loss:{dev_loss:02.4f}, ' +\
@@ -196,6 +214,6 @@ class HS_Model():
         if verbose == 1:
             print('\n' + out_info_epoch + '\n')
         elif verbose == 2:
-            sys.stdout.write('\r' + out_info_epoch)
+            print(out_info_epoch)
         else:
             pass

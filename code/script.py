@@ -5,8 +5,8 @@ import argparse
 from hs_models import HS_Model
 from utils import MVSDataset, pad_collate
 from torch.utils.data import DataLoader, ConcatDataset
-from utils import reset_all_seeds, MVSDataLoaderFactory, load_scenarios, save_history, load_model, save_summary
-from config_data import vector_size, history_path, model_path, results_file, batch_size, limit_vectors
+from utils import reset_all_seeds, MVSDataLoaderFactory, load_scenarios, save_history, load_model, save_summary, save_config
+from config_data import vector_size, history_path, model_path, results_file, batch_size, limit_vectors, config_file
 import datetime
 
 
@@ -19,10 +19,7 @@ def main(scenarios_file, device, epochs, patience, verbose):
 
     # dumb model only to save specs
     dmodel = HS_Model(vector_size=vector_size, device=device, patience=patience)
-    with open(results_file, 'w') as outfile:
-        outfile.write(str(datetime.datetime.now()) + '\n')
-        outfile.write(str(dmodel.net) + '\n')
-        outfile.write(str(dmodel.optimizer) + '\n')
+    save_config(dmodel, config_file)
 
     for scenario in scenarios:
         reset_all_seeds(RANDOM_SEED)
