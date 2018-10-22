@@ -5,8 +5,10 @@ import argparse
 from hs_models import HS_Model
 from utils import MVSDataset, pad_collate
 from torch.utils.data import DataLoader, ConcatDataset
-from utils import reset_all_seeds, MVSDataLoaderFactory, load_scenarios, save_history
-from config_data import vector_size, history_path
+from utils import reset_all_seeds, MVSDataLoaderFactory, load_scenarios, save_history, load_model, save_summary
+from config_data import vector_size, history_path, model_path, results_file
+import datetime
+
 
 RANDOM_SEED = 33
 
@@ -14,15 +16,32 @@ def main(scenarios_file, device, epochs, patience):
     dlf = MVSDataLoaderFactory()
     scenarios = load_scenarios(scenarios_file)
     print('training in', device)
+
+    # dumb model only to save specs
+    dmodel = HS_Model(vector_size=vector_size, device=device, patience=patience)
+    with open(results_file, 'w') as outfile:
+        outfile.write(str(datetime.datetime.now()) + '\n')
+        outfile.write(str(dmodel.net) + '\n')
+        outfile.write(str(dmodel.optimizer) + '\n')
+
     for scenario in scenarios:
-        dlf.batch_size = 16
+        dlf.batch_size = 32
         reset_all_seeds(RANDOM_SEED)
         print('training scenario:',scenario)
         train_loader, dev_loader, test_loader = dlf.data_loaders_from_scenario(scenario)
-        model = HS_Model(vector_size=vector_size, device=device, patience=patience)
+        model = HS_Model(vector_size=vector_size, device=device, patience=patience,
+            save_best=True, scenario=scenario, model_path=model_path)
         model.train(train_loader, dev_loader, epochs=epochs)
-        test_loss, test_acc = model.evaluate(test_loader)
         save_history(history_path, scenario, model)
+
+        # carga y evalua el mejor modelo
+        best_model = load_model(model_path, scenario)
+        test_loss, test_acc = best_model.evaluate(test_loader)
+        
+        print('finish scenario:',scenario)
+        print(f'in best model: test_loss:{test_loss:02.4f}, test_acc:{test_acc*100:02.2f}%')
+        save_summary(results_file, scenario, test_acc, test_loss, model)
+
 
 if __name__ == '__main__':
     import argparse

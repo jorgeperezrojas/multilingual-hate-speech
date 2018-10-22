@@ -2,20 +2,21 @@ import torch
 import sys
 import time
 import numpy as np
-from utils import score, report
+from utils import score, report, save_model
 from collections import defaultdict
+import pickle
 
 
 class LSTM_HS(torch.nn.Module):
 
     def __init__(self,
         vector_size = 300,
-        lstm_hidden_size = 128,
-        lstm_layers = 3,
+        lstm_hidden_size = 64,
+        lstm_layers = 2,
         bidirectional = True,
-        lstm_dropout = 0.4,
-        fc_hidden_size = 500,
-        fc_dropout = 0.3
+        lstm_dropout = 0.5,
+        fc_hidden_size = 300,
+        fc_dropout = 0.5
     ):
         super(LSTM_HS, self).__init__()
         self.lstm_hidden_size = lstm_hidden_size
@@ -49,11 +50,15 @@ class LSTM_HS(torch.nn.Module):
 
 class HS_Model():
 
-    def __init__(self, max_sequence_len=None, device='cpu', patience=None, **kwargs):
+    def __init__(self, max_sequence_len=None, device='cpu', patience=None, 
+            save_best=False, scenario=None, model_path=None, **kwargs):    
         self.device = torch.device(device)
         self.max_sequence_len = max_sequence_len
         self.net = LSTM_HS(**kwargs)
-        self.optimizer = torch.optim.Adam(self.net.parameters())
+        ### OPTIMIZER
+        #self.optimizer = torch.optim.Adam(self.net.parameters())
+        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=0.01, momentum=0.9)
+        ###
         self.criterion = torch.nn.BCEWithLogitsLoss()
         self.detailed_train_history = defaultdict(list)
         self.train_history = defaultdict(list)
@@ -69,6 +74,11 @@ class HS_Model():
                 'best_loss': self.best_dev_loss,
                 'best_acc': self.best_dev_acc,
             }
+
+        assert (not save_best) or (scenario and model_path), 'For save_best True, scenario and model_path should be defined'
+        self.save_best = save_best
+        self.scenario = scenario
+        self.model_path = model_path
 
     def train(self, train_loader, dev_loader, epochs=2, verbose=1):      
         batch_size = train_loader.batch_size
@@ -107,7 +117,12 @@ class HS_Model():
             self.__log_history(epoch, iterations, running_loss, running_acc, dev_loss, dev_acc)
             
             if self.patience and self.epochs_not_improving >= self.patience:
-                print('\nEnough of not improving...')
+                best_dev_loss = self.best_dev_loss['value']
+                best_dev_acc = self.best_dev_acc['value']
+                final_msg = 'Enough of not improving...' +\
+                    f'best_dev_loss:{best_dev_loss:02.4f}, ' +\
+                    f'best_dev_acc:{best_dev_acc*100:02.2f}%'
+                print(final_msg)
                 break
 
         return self.history_output
@@ -143,9 +158,12 @@ class HS_Model():
         if dev_loss < self.best_dev_loss['value']:
             self.best_dev_loss['value'] = dev_loss
             self.best_dev_loss['epoch'] = epoch
-        if dev_acc < self.best_dev_acc['value']:
+        if dev_acc > self.best_dev_acc['value']:
             self.best_dev_acc['value'] = dev_acc
             self.best_dev_acc['epoch'] = epoch
+            self.epochs_not_improving = 0
+            if self.save_best:
+                save_model(self.model_path, self.scenario, self)
         else:
             self.epochs_not_improving += 1
 

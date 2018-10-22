@@ -1,12 +1,16 @@
-vec_base_path = '/Users/jperez/research/nlp/word-embeddings/multilingual/'
+vec_base_path = '/data/word_embeddings/multilingual/fasttext/small/'
+#vec_base_path = '/Users/jperez/research/nlp/word-embeddings/multilingual/'
 data_base_path = '../data/processed/'
 format_name = 'wiki.{language}.{size}.align.vec'
 format_dataset = '{label}_{XorY}_{settype}.txt'
 history_path = 'train_history/'
+model_path = 'best_models/'
+results_file = 'results_{timeday}.txt'
+
 vector_size = 300
 
 languages = ['es', 'en', 'it']
-size_vec_file = '10k'
+size_vec_file = '500k'
 
 labels_train_data = ['es', 'en', 'it']
 labels_test_data = ['es', 'en', 'it', 'es_manual']
@@ -19,8 +23,13 @@ labels_to_language = {
 }
 
 from collections import defaultdict
+from datetime import datetime
+
 config_data = defaultdict(dict)
 vector_files = defaultdict(str)
+
+timeday = str(datetime.now().date()) + '_' + str(datetime.now().time())
+results_file = results_file.format(timeday=timeday)
 
 for language in languages:
     vector_files[language] = vec_base_path + format_name.format(language=language, size=size_vec_file)

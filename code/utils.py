@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, ConcatDataset, random_split, DataLoader
 from gensim.models.keyedvectors import KeyedVectors
 from sklearn.metrics import classification_report, accuracy_score, f1_score, recall_score, precision_score
 from config_data import config_data, vector_files
+import pickle
 
 sklearn_options = {
     'accuracy': accuracy_score,
@@ -50,7 +51,43 @@ def save_history(history_path, scenario, model):
     outname = hash_texto(str(scenario))[:15] + '.hist'
     with open(history_path + outname, 'w') as outfile:
         outfile.write(str(scenario) + '\n')
+        outfile.write(str(model.best_dev_acc['value']) + ' ') 
+        outfile.write(str(model.best_dev_loss['value'])  + '\n')
         outfile.write(str(model.history_output) + '\n')
+
+def save_summary(results_file, scenario, test_acc, test_loss, model):
+    with open(results_file, 'a') as outfile:
+        prefix = hash_texto(str(scenario))[:15]
+        outfile.write(str(scenario) + '\t')
+        # acc
+        dev_acc = model.best_dev_acc['value']
+        train_acc = model.train_history['train_acc'][-1]
+        outfile.write(f'{test_acc*100:02.2f}' + '\t')
+        outfile.write(f'{dev_acc*100:02.2f}' + '\t')
+        outfile.write(f'{train_acc*100:02.2f}' + '\t')
+
+        # name
+        outfile.write(prefix + '\t')
+
+        # loss
+        dev_loss = model.best_dev_loss['value']
+        train_loss = model.train_history['train_loss'][-1]
+        outfile.write(f'{test_loss:02.4f}' + '\t')
+        outfile.write(f'{dev_loss:02.4f}' + '\t')
+        outfile.write(f'{train_loss:02.4f}' + '\n')
+
+
+def save_model(model_path, scenario, model):
+    outname = hash_texto(str(scenario))[:15] + '.pkl'
+    with open(model_path + outname, 'wb') as outfile:
+        pickle.dump(model, outfile)
+
+def load_model(model_path, scenario):
+    filename = hash_texto(str(scenario))[:15] + '.pkl'
+    with open(model_path + filename, 'rb') as infile:
+        model = pickle.load(infile)
+    return model
+
 
 def pad_collate(batch):
     batch.sort(key=lambda b: len(b[0]), reverse=True)
@@ -78,16 +115,51 @@ class MVSDataLoaderFactory():
         return dataset
 
     # TODO: dev split should be consistent with the test set (dev and test should have similar distributions!)
-    def data_loaders_from_scenario(self, scenario={'train':['es'], 'test':'es'}):
-        list_of_train_datasets = []
+    def data_loaders_from_scenario(self, scenario={'train':['es'], 'test':['es']}):
+        
+        # We split the train datasets into train-dev datasets
+        # considering the test set labels to make the split.
+
+        dev_labels = set(scenario['train']) & set(scenario['test'])
+        if dev_labels == set():
+            dev_labels = set(scenario['train'])
+        total_size = 0
+        to_dev_size = 0
+        list_of_train_dev_datasets = []
+
         for label in scenario['train']:
             dataset = self.__data_set_from_label(label, 'train')
-            list_of_train_datasets.append(dataset)
-        train_dev_dataset = ConcatDataset(list_of_train_datasets)
-        dev_size = int(len(train_dev_dataset) * self.dev_split)
-        train_size = len(train_dev_dataset) - dev_size
-        (dev_dataset, train_dataset) = random_split(train_dev_dataset, [dev_size, train_size])
-        test_dataset = self.__data_set_from_label(scenario['test'], 'test')
+            list_of_train_dev_datasets.append(dataset)
+            total_size += len(dataset)
+            if label in dev_labels:
+                to_dev_size += len(dataset)
+
+        corrected_dev_split = min(self.dev_split * total_size / to_dev_size, 1)
+
+        list_of_train_datasets = []
+        list_of_dev_datasets = []
+
+        for label, dataset in zip(scenario['train'], list_of_train_dev_datasets):
+            if label not in dev_labels:
+                list_of_train_datasets.append(dataset)
+            else: # we need to split
+                dev_size = int(len(dataset) * corrected_dev_split)
+                train_size = len(dataset) - dev_size
+                (to_dev, to_train) = random_split(dataset, [dev_size, train_size])
+                list_of_train_datasets.append(to_train)
+                list_of_dev_datasets.append(to_dev)
+
+        #ipdb.set_trace()
+
+        train_dataset = ConcatDataset(list_of_train_datasets)
+        dev_dataset = ConcatDataset(list_of_dev_datasets)
+
+        list_of_test_datasets = []
+        for label in scenario['test']:
+            dataset = self.__data_set_from_label(label, 'test')
+            list_of_test_datasets.append(dataset)
+
+        test_dataset = ConcatDataset(list_of_test_datasets)
 
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, collate_fn=pad_collate)
         dev_loader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, collate_fn=pad_collate)
