@@ -6,6 +6,10 @@ from gensim.models.keyedvectors import KeyedVectors
 from sklearn.metrics import classification_report, accuracy_score, f1_score, recall_score, precision_score
 from config_data import config_data, vector_files
 import pickle
+import sys
+import ipdb
+
+_hash_len = 8
 
 sklearn_options = {
     'accuracy': accuracy_score,
@@ -18,7 +22,6 @@ def reset_all_seeds(RANDOM_SEED=33):
     np.random.seed(RANDOM_SEED)
     torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed_all(RANDOM_SEED)
-
 
 def score(Y_pred_prob, Y, sklearn_metric=accuracy_score):
     if type(sklearn_metric) == str:
@@ -37,7 +40,7 @@ def report(Y_pred_prob, Y):
 
 def hash_texto(texto):
     out = hashlib.sha224(texto.encode('utf-8')).hexdigest()
-    return str(out)
+    return str(out)[:_hash_len]
 
 def load_scenarios(scenarios_file):
     with open(scenarios_file) as file:
@@ -48,46 +51,51 @@ def load_scenarios(scenarios_file):
     return scenarios
 
 def save_history(history_path, scenario, model):
-    outname = hash_texto(str(scenario))[:15] + '.hist'
+    outname = hash_texto(str(scenario)) + '.hist'
     with open(history_path + outname, 'w') as outfile:
         outfile.write(str(scenario) + '\n')
         outfile.write(str(model.best_dev_acc['value']) + ' ') 
         outfile.write(str(model.best_dev_loss['value'])  + '\n')
         outfile.write(str(model.history_output) + '\n')
 
-def save_summary(results_file, scenario, test_acc, test_loss, model):
+def save_summary(results_file, scenario, best_model, train_loader, dev_loader, test_loader, verbose=1):
+
+    loaders = [('test',test_loader), ('dev',dev_loader), ('train',train_loader)]
+    metrics = ['accuracy','precision','recall','f1']
+    all_results = []
+
+    for settype, loader in loaders:
+        results = best_model.evaluate_metrics(loader, metrics)
+        all_results.append((settype,results))
+    
     with open(results_file, 'a') as outfile:
-        prefix = hash_texto(str(scenario))[:15]
+        prefix = hash_texto(str(scenario))
         outfile.write(str(scenario) + '\t')
-        # acc
-        dev_acc = model.best_dev_acc['value']
-        train_acc = model.train_history['train_acc'][-1]
-        outfile.write(f'{test_acc*100:02.2f}' + '\t')
-        outfile.write(f'{dev_acc*100:02.2f}' + '\t')
-        outfile.write(f'{train_acc*100:02.2f}' + '\t')
 
-        # name
-        outfile.write(prefix + '\t')
-
-        # loss
-        dev_loss = model.best_dev_loss['value']
-        train_loss = model.train_history['train_loss'][-1]
-        outfile.write(f'{test_loss:02.4f}' + '\t')
-        outfile.write(f'{dev_loss:02.4f}' + '\t')
-        outfile.write(f'{train_loss:02.4f}' + '\n')
+        for i, metric in enumerate(metrics):
+            for settype, results in all_results:
+                multiplier = 100 if metric == 'accuracy' else 1
+                to_write = f'{results[i]*multiplier:02.4f}' + '\t'
+                outfile.write(to_write)
+                if verbose >= 1 and metric == 'accuracy':
+                    to_report = f'{settype}_{metric}:{results[i]*multiplier:02.2f} '
+                    sys.stdout.write(to_report)
+        if verbose >= 1:
+            print()
+        outfile.write(prefix + '\n')
+        
 
 
 def save_model(model_path, scenario, model):
-    outname = hash_texto(str(scenario))[:15] + '.pkl'
+    outname = hash_texto(str(scenario)) + '.pkl'
     with open(model_path + outname, 'wb') as outfile:
         pickle.dump(model, outfile)
 
 def load_model(model_path, scenario):
-    filename = hash_texto(str(scenario))[:15] + '.pkl'
+    filename = hash_texto(str(scenario)) + '.pkl'
     with open(model_path + filename, 'rb') as infile:
         model = pickle.load(infile)
     return model
-
 
 def pad_collate(batch):
     batch.sort(key=lambda b: len(b[0]), reverse=True)
@@ -98,13 +106,13 @@ def pad_collate(batch):
     Y = torch.FloatTensor(Y_seq).view(-1,1)
     return (X, Y, lengths)
 
-
 class MVSDataLoaderFactory():
 
-    def __init__(self, batch_size=32, dev_split=0.1, max_sequence_len=None):
+    def __init__(self, batch_size=32, limit_vectors=None, dev_split=0.1, max_sequence_len=None):
         self.max_sequence_len = max_sequence_len
         self.dev_split = dev_split
         self.batch_size = batch_size
+        MVSDataset.limit_vectors = limit_vectors
 
     def __data_set_from_label(self, label, set_type):
         X_file = config_data[label][set_type]['X']
@@ -114,12 +122,10 @@ class MVSDataLoaderFactory():
         dataset = MVSDataset(X_file, Y_file, language, language_file)
         return dataset
 
-    # TODO: dev split should be consistent with the test set (dev and test should have similar distributions!)
     def data_loaders_from_scenario(self, scenario={'train':['es'], 'test':['es']}):
         
         # We split the train datasets into train-dev datasets
         # considering the test set labels to make the split.
-
         dev_labels = set(scenario['train']) & set(scenario['test'])
         if dev_labels == set():
             dev_labels = set(scenario['train'])
@@ -149,8 +155,6 @@ class MVSDataLoaderFactory():
                 list_of_train_datasets.append(to_train)
                 list_of_dev_datasets.append(to_dev)
 
-        #ipdb.set_trace()
-
         train_dataset = ConcatDataset(list_of_train_datasets)
         dev_dataset = ConcatDataset(list_of_dev_datasets)
 
@@ -173,6 +177,7 @@ class MVSDataset(Dataset):
     __multi_ling_vecs = {}
     __multi_ling_files = {}
     __vector_size = None
+    limit_vectors = None
 
     def __init__(self, X_file, Y_file, language, 
         language_file=None, max_sequence_len=None, verbose=True):
@@ -226,9 +231,9 @@ class MVSDataset(Dataset):
                 raise ValueError(err_msg)
             else:
                 if verbose:
-                    print(f'Loading vectors for language \'{language}\'.')
+                    print(f'Loading {cls.limit_vectors} vectors for language \'{language}\'.')
                 cls.__multi_ling_files[language] = language_file 
-                cls.__multi_ling_vecs[language] = KeyedVectors.load_word2vec_format(language_file, binary=False)
+                cls.__multi_ling_vecs[language] = KeyedVectors.load_word2vec_format(language_file, binary=False, limit=cls.limit_vectors)
                 vector_size = cls.__multi_ling_vecs[language].vector_size
                 if cls.__vector_size:
                     assert cls.__vector_size == vector_size, 'All vectors should be of the same size.'
