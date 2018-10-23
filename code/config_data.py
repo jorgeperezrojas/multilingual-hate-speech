@@ -1,5 +1,5 @@
-#vec_base_path = '/data/word_embeddings/multilingual/fasttext/'
-vec_base_path = '/Users/jperez/research/nlp/word-embeddings/multilingual/'
+vec_base_path = '/data/word_embeddings/multilingual/fasttext/'
+#vec_base_path = '/Users/jperez/research/nlp/word-embeddings/multilingual/'
 data_base_path = '../data/processed/'
 format_name = 'wiki.{language}.align.vec'
 format_dataset = '{label}_{XorY}_{settype}.txt'
@@ -9,8 +9,10 @@ results_file = 'results/results_{timeday}.txt'
 config_file = 'results/results_{timeday}.config.txt'
 
 vector_size = 300
-limit_vectors = 2000
+limit_vectors = 1000
 batch_size = 32
+
+num_threads = 1
 
 languages = ['es', 'en', 'it']
 

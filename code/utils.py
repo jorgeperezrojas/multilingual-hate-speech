@@ -29,13 +29,13 @@ def score(Y_pred_prob, Y, sklearn_metric=accuracy_score):
         sklearn_metric = sklearn_options[sklearn_metric]
     Y_pred = (Y_pred_prob.float() >= 0.5).float()
     Y_pred = Y_pred.view(-1).cpu().numpy()
-    Y = Y.view(-1).cpu().numpy()
+    Y = Y.cpu().view(-1).numpy()
     return sklearn_metric(Y, Y_pred)
 
 def report(Y_pred_prob, Y):
     Y_pred = (Y_pred_prob >= 0.5).float()
-    Y_pred = Y_pred.view(-1).numpy()
-    Y = Y.view(-1).numpy()
+    Y_pred = Y_pred.cpu().view(-1).numpy()
+    Y = Y.cpu().view(-1).numpy()
     target_names = ['class_0', 'class_1']
     return classification_report(Y, Y_pred, target_names=target_names) 
 
