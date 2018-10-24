@@ -5,11 +5,12 @@ import argparse
 from hs_models import HS_Model
 from torch.utils.data import DataLoader, ConcatDataset
 from utils import reset_all_seeds, MVSDataLoaderFactory, get_hyperparameter_options, load_scenarios, save_history, load_model, save_summary, save_config
-from config_data import vector_size, history_path, model_path, results_file, batch_size, limit_vectors, config_file
+from config_data import vector_size, history_path, model_path, results_file, batch_size, limit_vectors, config_file, num_threads
 import datetime
 
 
 RANDOM_SEED = 33
+torch.set_num_threads(num_threads)
 
 def main(scenarios_file, device, epochs, patience, verbose, hyper_params_file):
     dlf = MVSDataLoaderFactory(batch_size=batch_size, limit_vectors=limit_vectors)
