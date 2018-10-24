@@ -1,0 +1,7 @@
+{'train':['es'], 'test':['es_manual']}
+{'train':['en'], 'test':['es_manual']}
+{'train':['it'], 'test':['es_manual']}
+{'train':['es','en'], 'test':['es_manual']}
+{'train':['es','it'], 'test':['es_manual']}
+{'train':['en','it'], 'test':['es_manual']}
+{'train':['es','en','it'], 'test':['es_manual']}
