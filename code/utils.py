@@ -19,6 +19,12 @@ sklearn_options = {
     'precision': precision_score
 }
 
+def get_hyperparameter_options(hp_file):
+    d = open(hp_file).read()
+    d = d.split('$')
+    options = [eval(s) for s in d]
+    return options
+
 def reset_all_seeds(RANDOM_SEED=33):
     np.random.seed(RANDOM_SEED)
     torch.manual_seed(RANDOM_SEED)

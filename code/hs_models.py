@@ -49,16 +49,23 @@ class LSTM_HS(torch.nn.Module):
 
 
 class HS_Model():
-
     def __init__(self, max_sequence_len=None, device='cpu', patience=None, 
-            save_best=False, scenario=None, model_path=None, **kwargs):    
+            save_best=False, scenario=None, model_path=None, optimizer='sgd',
+            lr=0.01, momentum=0.9, weight_decay=0, **kwargs):    
         self.device = torch.device(device)
         self.max_sequence_len = max_sequence_len
+
+        # net
         self.net = LSTM_HS(**kwargs)
-        ### OPTIMIZER
-        #self.optimizer = torch.optim.Adam(self.net.parameters())
-        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=0.01, momentum=0.9)
-        ###
+
+        # optimizer
+        if optimizer == 'sgd':
+            self.optimizer = torch.optim.SGD(self.net.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+        elif optimizer == 'adam':
+            self.optimizer = torch.optim.Adam(self.net.parameters(), lr=lr, weight_decay=weight_decay)
+        elif optimizer == 'rmsprop':
+            self.optimizer = torch.optim.RMSprop(self.net.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)        
+        
         self.criterion = torch.nn.BCEWithLogitsLoss()
         self.detailed_train_history = defaultdict(list)
         self.train_history = defaultdict(list)
