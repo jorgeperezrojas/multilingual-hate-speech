@@ -3,13 +3,13 @@ vec_base_path = '/data/word_embeddings/multilingual/fasttext/'
 data_base_path = '../data/processed/'
 format_name = 'wiki.{language}.align.vec'
 format_dataset = '{label}_{XorY}_{settype}.txt'
-history_path = 'train_history/'
+history_path = 'train_history/history_{timeday}/'
 model_path = 'best_models/models_{timeday}/'
 results_file = 'results/results_{timeday}.txt'
 config_file = 'results/results_{timeday}.config.txt'
 
 vector_size = 300
-limit_vectors = 1000
+limit_vectors = 200000
 batch_size = 32
 
 num_threads = 1
@@ -46,6 +46,9 @@ config_file = config_file.format(timeday=timeday)
 model_path = model_path.format(timeday=timeday)
 if not os.path.exists(model_path):
     os.makedirs(model_path)
+history_path = history_path.format(timeday=timeday)
+if not os.path.exists(history_path):
+    os.makedirs(history_path)
 
 for language in languages:
     vector_files[language] = vec_base_path + format_name.format(language=language)

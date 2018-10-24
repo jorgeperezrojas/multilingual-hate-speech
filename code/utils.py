@@ -34,7 +34,7 @@ def score(Y_pred_prob, Y, sklearn_metric=accuracy_score):
     if type(sklearn_metric) == str:
         sklearn_metric = sklearn_options[sklearn_metric]
     Y_pred = (Y_pred_prob.float() >= 0.5).float()
-    Y_pred = Y_pred.view(-1).cpu().numpy()
+    Y_pred = Y_pred.cpu().view(-1).numpy()
     Y = Y.cpu().view(-1).numpy()
     return sklearn_metric(Y, Y_pred)
 
