@@ -74,7 +74,7 @@ def save_config(model, config_file):
         outfile.write(str(model.net) + '\n\n')
         outfile.write(str(model.optimizer) + '\n\n')
 
-def save_summary(results_file, scenario, best_model, train_loader, dev_loader, test_loader, verbose=1):
+def save_summary(results_file, scenario, model, best_model, train_loader, dev_loader, test_loader, verbose=1):
     loaders = [('test',test_loader), ('dev',dev_loader), ('train',train_loader)]
     metrics = ['accuracy','precision','recall','f1']
     all_results = []
@@ -86,6 +86,11 @@ def save_summary(results_file, scenario, best_model, train_loader, dev_loader, t
     with open(results_file, 'a') as outfile:
         prefix = hash_texto(str(scenario))
         outfile.write(str(scenario) + '\t')
+
+        last_train_acc = model.train_history['train_acc'][-1]
+        last_train_loss = model.train_history['train_loss'][-1]
+        last_train_metrics = f'{last_train_acc:0.4f}\t{last_train_loss:0.4f}\t'
+        outfile.write(last_train_metrics)
 
         for i, metric in enumerate(metrics):
             for settype, results in all_results:

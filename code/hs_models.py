@@ -10,18 +10,27 @@ import pickle
 class LSTM_HS(torch.nn.Module):
 
     def __init__(self,
+        initial_avg,
+        avg_size,
+        lstm_hidden_size,
+        lstm_layers,
+        bidirectional,
+        lstm_dropout,
+        fc_hidden_size,
+        fc_dropout,
         vector_size = 300,
-        lstm_hidden_size = 64,
-        lstm_layers = 2,
-        bidirectional = True,
-        lstm_dropout = 0.5,
-        fc_hidden_size = 300,
-        fc_dropout = 0.5
     ):
         super(LSTM_HS, self).__init__()
         self.lstm_hidden_size = lstm_hidden_size
         self.lstm_layers = lstm_layers
         self.directions = 2 if bidirectional else 1
+
+        self.initial_avg = initial_avg
+        if self.initial_avg:
+            assert avg_size % 2 == 1, "Size of the average pooling should be an odd number."
+            padding_size = int(avg_size/2)
+            stride = 1
+            self.avg_pool = torch.nn.AvgPool1d(avg_size,stride,padding_size)
         
         self.lstm = torch.nn.LSTM(
             input_size = vector_size,
@@ -35,7 +44,14 @@ class LSTM_HS(torch.nn.Module):
 
     def forward(self, X, lengths):
         # asume que el input es una sequencia con padding
-        # asume time-step first
+        # asume time-step first (L,N,C)
+        if self.initial_avg:
+            # rearrange to apply 1d average (L,N,C) --> (N,C,L)
+            X = X.transpose(0,1).transpose(1,2)
+            X = self.avg_pool(X)
+            # rearrange again for the input of the recurrent layer (N,C,L) --> (L,N,C)
+            X = X.transpose(2,1).transpose(1,0)
+            
         X = torch.nn.utils.rnn.pack_padded_sequence(X, lengths)
         _, (h, _) = self.lstm(X) 
         # aqui desarmo

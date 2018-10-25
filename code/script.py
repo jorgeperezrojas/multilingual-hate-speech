@@ -17,11 +17,11 @@ def main(scenarios_file, device, epochs, patience, verbose, hyper_params_file):
     scenarios = load_scenarios(scenarios_file)
     print('training in', device)
 
-    # dumb model only to save specs
-    dmodel = HS_Model(vector_size=vector_size, device=device, patience=patience)
-    save_config(dmodel, config_file)
-
     hp_cases = get_hyperparameter_options(hyper_params_file)
+
+    # dumb model only to save specs
+    dmodel = HS_Model(vector_size=vector_size, device=device, patience=patience, **hp_cases[0])
+    save_config(dmodel, config_file)
 
     for scenario in scenarios:
         for hps in hp_cases:
@@ -36,7 +36,7 @@ def main(scenarios_file, device, epochs, patience, verbose, hyper_params_file):
             
             model.train(train_loader, dev_loader, epochs=epochs, verbose=verbose)
             best_model = load_model(model_path, scenario)
-            save_summary(results_file, scenario, best_model, train_loader, dev_loader, test_loader, verbose=1)
+            save_summary(results_file, scenario, model, best_model, train_loader, dev_loader, test_loader, verbose=1)
             print('Finish training scenario:',scenario)
 
 
