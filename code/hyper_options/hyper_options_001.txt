@@ -1,11 +1,14 @@
 {
+    'optimizer': 'adam',
     'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 0,
-    'lstm_hidden_size': 50,
-    'lstm_layers': 1,
+    'initial_avg': True,
+    'avg_size': 5,
+    'lstm_hidden_size': 121,
+    'lstm_layers': 2,
     'bidirectional': False,
     'lstm_dropout': 0.1,
-    'fc_hidden_size': 0,
+    'fc_hidden_size': 32,
     'fc_dropout': 0.1    
 }
