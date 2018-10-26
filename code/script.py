@@ -5,7 +5,7 @@ import argparse
 from hs_models import HS_Model
 from torch.utils.data import DataLoader, ConcatDataset
 from utils import reset_all_seeds, MVSDataLoaderFactory, get_hyperparameter_options, load_scenarios, save_history, load_model, save_summary, save_config
-from config_data import vector_size, history_path, model_path, results_file, batch_size, limit_vectors, config_file, num_threads
+from config_data import vector_size, history_path, model_path, results_file, results_config_file, num_threads
 import datetime
 
 
@@ -13,31 +13,31 @@ RANDOM_SEED = 33
 torch.set_num_threads(num_threads)
 
 def main(scenarios_file, device, epochs, patience, verbose, hyper_params_file):
+    hps = get_hyperparameter_options(hyper_params_file)[0]
+    batch_size = hps['batch_size']
+    limit_vectors = hps['limit_vectors']
+
     dlf = MVSDataLoaderFactory(batch_size=batch_size, limit_vectors=limit_vectors)
     scenarios = load_scenarios(scenarios_file)
     print('training in', device)
 
-    hp_cases = get_hyperparameter_options(hyper_params_file)
-
     # dumb model only to save specs
-    dmodel = HS_Model(vector_size=vector_size, device=device, patience=patience, **hp_cases[0])
-    save_config(dmodel, config_file)
+    dmodel = HS_Model(vector_size=vector_size, device=device, patience=patience, **hps)
+    save_config(dmodel, hps, results_config_file)
 
     for scenario in scenarios:
-        for hps in hp_cases:
+        reset_all_seeds(RANDOM_SEED)
+        print('\nTraining scenario:',scenario)
+        print('Hyperparameters:',hps)
 
-            reset_all_seeds(RANDOM_SEED)
-            print('\nTraining scenario:',scenario)
-            print('Hyperparameters:',hps)
-
-            train_loader, dev_loader, test_loader = dlf.data_loaders_from_scenario(scenario)
-            model = HS_Model(vector_size=vector_size, device=device, patience=patience,
-                save_best=True, scenario=scenario, model_path=model_path, **hps)
-            
-            model.train(train_loader, dev_loader, epochs=epochs, verbose=verbose)
-            best_model = load_model(model_path, scenario)
-            save_summary(results_file, scenario, model, best_model, train_loader, dev_loader, test_loader, verbose=1)
-            print('Finish training scenario:',scenario)
+        train_loader, dev_loader, test_loader = dlf.data_loaders_from_scenario(scenario)
+        model = HS_Model(vector_size=vector_size, device=device, patience=patience,
+            save_best=True, scenario=scenario, model_path=model_path, **hps)
+        
+        model.train(train_loader, dev_loader, epochs=epochs, verbose=verbose)
+        best_model = load_model(model_path, scenario)
+        save_summary(results_file, scenario, model, best_model, train_loader, dev_loader, test_loader, verbose=1)
+        print('Finish training scenario:',scenario)
 
 
 if __name__ == '__main__':

@@ -19,6 +19,7 @@ class LSTM_HS(torch.nn.Module):
         fc_hidden_size,
         fc_dropout,
         vector_size = 300,
+        **kwargs
     ):
         super(LSTM_HS, self).__init__()
         self.lstm_hidden_size = lstm_hidden_size

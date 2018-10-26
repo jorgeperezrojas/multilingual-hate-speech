@@ -8,7 +8,7 @@ from config_data import config_data, vector_files
 import pickle
 import sys
 from datetime import datetime
-from config_data import vector_size, batch_size, limit_vectors
+from config_data import vector_size
 
 _hash_len = 8
 
@@ -65,11 +65,11 @@ def save_history(history_path, scenario, model):
         outfile.write(str(model.best_dev_loss['value'])  + '\n')
         outfile.write(str(model.history_output) + '\n')
 
-def save_config(model, config_file):
+def save_config(model, hps, config_file):
     with open(config_file, 'w') as outfile:
         outfile.write('vector_size:' + str(vector_size) + '\n')
-        outfile.write('batch_size:' + str(batch_size) + '\n')
-        outfile.write('limit_vectors:' + str(limit_vectors) + '\n')
+        outfile.write('batch_size:' + str(hps['batch_size']) + '\n')
+        outfile.write('limit_vectors:' + str(hps['limit_vectors']) + '\n')
         outfile.write('\n')
         outfile.write(str(model.net) + '\n\n')
         outfile.write(str(model.optimizer) + '\n\n')
