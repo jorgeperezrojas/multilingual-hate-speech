@@ -24,6 +24,7 @@ class LSTM_HS(torch.nn.Module):
         self.lstm_hidden_size = lstm_hidden_size
         self.lstm_layers = lstm_layers
         self.directions = 2 if bidirectional else 1
+        self.fc_hidden_size = fc_hidden_size
 
         self.initial_avg = initial_avg
         if self.initial_avg:
@@ -38,7 +39,10 @@ class LSTM_HS(torch.nn.Module):
             num_layers = lstm_layers,
             dropout = lstm_dropout,
             bidirectional = bidirectional)
+        
+        self.fc_1_dropout = torch.nn.Dropout(fc_dropout)
         self.fc_1 = torch.nn.Linear(self.directions * lstm_hidden_size, fc_hidden_size)
+        self.fc_2_dropout = torch.nn.Dropout(fc_dropout)
         self.fc_2 = torch.nn.Linear(fc_hidden_size, 1)
      
 
@@ -59,8 +63,11 @@ class LSTM_HS(torch.nn.Module):
         h = h[-1].transpose(0,1).contiguous()
         h = h.view(-1, self.directions * self.lstm_hidden_size)
         ##############
-        h = torch.nn.functional.relu(self.fc_1(h))
-        h = self.fc_2(h)
+        h = self.fc_1_dropout(h)
+        h = self.fc_1(h)
+        if self.fc_hidden_size > 1:
+            h = torch.nn.functional.relu(h)
+            h = self.fc_2(h)
         return h
 
 
