@@ -1,17 +1,14 @@
-vec_base_path = '/data/word_embeddings/multilingual/fasttext/'
-#vec_base_path = '/Users/jperez/research/nlp/word-embeddings/multilingual/'
+#vec_base_path = '/data/word_embeddings/multilingual/fasttext/'
+vec_base_path = '/Users/jperez/research/nlp/word-embeddings/multilingual/'
 data_base_path = '../data/processed/'
 format_name = 'wiki.{language}.align.vec'
 format_dataset = '{label}_{XorY}_{settype}.txt'
 history_path = 'train_history/history_{timeday}/'
 model_path = 'best_models/models_{timeday}/'
 results_file = 'results/results_{timeday}.txt'
-config_file = 'results/results_{timeday}.config.txt'
+results_config_file = 'results/results_{timeday}.config.txt'
 
 vector_size = 300
-limit_vectors = 200000
-batch_size = 32
-
 num_threads = 1
 
 languages = ['es', 'en', 'it']
@@ -42,7 +39,7 @@ vector_files = defaultdict(str)
 
 timeday = datetime.now().strftime('%Y_%m_%d_%H_%M')
 results_file = results_file.format(timeday=timeday)
-config_file = config_file.format(timeday=timeday)
+results_config_file = results_config_file.format(timeday=timeday)
 model_path = model_path.format(timeday=timeday)
 if not os.path.exists(model_path):
     os.makedirs(model_path)
