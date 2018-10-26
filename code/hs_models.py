@@ -12,6 +12,7 @@ class LSTM_HS(torch.nn.Module):
     def __init__(self,
         initial_avg,
         avg_size,
+        input_dropout,
         lstm_hidden_size,
         lstm_layers,
         bidirectional,
@@ -26,6 +27,8 @@ class LSTM_HS(torch.nn.Module):
         self.lstm_layers = lstm_layers
         self.directions = 2 if bidirectional else 1
         self.fc_hidden_size = fc_hidden_size
+
+        self.inptu_dropout = torch.nn.Dropout(input_dropout)
 
         self.initial_avg = initial_avg
         if self.initial_avg:
@@ -50,6 +53,8 @@ class LSTM_HS(torch.nn.Module):
     def forward(self, X, lengths):
         # asume que el input es una sequencia con padding
         # asume time-step first (L,N,C)
+        X = self.inptu_dropout(X)
+
         if self.initial_avg:
             # rearrange to apply 1d average (L,N,C) --> (N,C,L)
             X = X.transpose(0,1).transpose(1,2)
