@@ -143,37 +143,43 @@ class MVSDataLoaderFactory():
         return dataset
 
     def data_loaders_from_scenario(self, scenario={'train':['es'], 'test':['es']}):
-        
-        # We split the train datasets into train-dev datasets
-        # considering the test set labels to make the split.
-        dev_labels = set(scenario['train']) & set(scenario['test'])
-        if dev_labels == set():
-            dev_labels = set(scenario['train'])
-        total_size = 0
-        to_dev_size = 0
-        list_of_train_dev_datasets = []
-
-        for label in scenario['train']:
-            dataset = self.__data_set_from_label(label, 'train')
-            list_of_train_dev_datasets.append(dataset)
-            total_size += len(dataset)
-            if label in dev_labels:
-                to_dev_size += len(dataset)
-
-        corrected_dev_split = min(self.dev_split * total_size / to_dev_size, 1)
-
+       
         list_of_train_datasets = []
         list_of_dev_datasets = []
 
-        for label, dataset in zip(scenario['train'], list_of_train_dev_datasets):
-            if label not in dev_labels:
-                list_of_train_datasets.append(dataset)
-            else: # we need to split
-                dev_size = int(len(dataset) * corrected_dev_split)
-                train_size = len(dataset) - dev_size
-                (to_dev, to_train) = random_split(dataset, [dev_size, train_size])
-                list_of_train_datasets.append(to_train)
-                list_of_dev_datasets.append(to_dev)
+        if 'dev' not in scenario:
+        # if there is no dev set defined, we split the train datasets into train-dev datasets
+        # considering the test set labels to make the split.    
+            dev_labels = set(scenario['train']) & set(scenario['test'])
+            if dev_labels == set():
+                dev_labels = set(scenario['train'])
+            total_size = 0
+            to_dev_size = 0
+            list_of_train_dev_datasets = []
+
+            for label in scenario['train']:
+                dataset = self.__data_set_from_label(label, 'train')
+                list_of_train_dev_datasets.append(dataset)
+                total_size += len(dataset)
+                if label in dev_labels:
+                    to_dev_size += len(dataset)
+
+            corrected_dev_split = min(self.dev_split * total_size / to_dev_size, 1)
+
+            for label, dataset in zip(scenario['train'], list_of_train_dev_datasets):
+                if label not in dev_labels:
+                    list_of_train_datasets.append(dataset)
+                else: # we need to split
+                    dev_size = int(len(dataset) * corrected_dev_split)
+                    train_size = len(dataset) - dev_size
+                    (to_dev, to_train) = random_split(dataset, [dev_size, train_size])
+                    list_of_train_datasets.append(to_train)
+                    list_of_dev_datasets.append(to_dev)
+        else:
+            for key, list_of_datasets in [('train', list_of_train_datasets), ('dev', list_of_dev_datasets)]:
+                for label in scenario[key]:
+                    dataset = self.__data_set_from_label(label, key)
+                    list_of_datasets.append(dataset)
 
         train_dataset = ConcatDataset(list_of_train_datasets)
         dev_dataset = ConcatDataset(list_of_dev_datasets)

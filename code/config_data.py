@@ -13,7 +13,8 @@ num_threads = 1
 
 languages = ['es', 'en', 'it']
 
-labels_train_data = ['es', 'en', 'it']
+labels_train_data = ['es', 'en', 'it', 'es_se', 'en_se']
+labels_dev_data = ['es_se', 'en_se']
 labels_test_data = ['es', 'en', 'it', 'es_manual']
 
 labels_to_language = {
@@ -21,6 +22,8 @@ labels_to_language = {
     'en': 'en',
     'it': 'it',
     'es_manual': 'es',
+    'es_se': 'es',
+    'en_se': 'en'
 }
 
 
@@ -58,10 +61,15 @@ for label in (set(labels_train_data) | set(labels_test_data)):
 for label in labels_to_language:
     config_data[label]['language'] = labels_to_language[label]
 
-for label in labels_train_data:
-    config_data[label]['train']['X'] = data_base_path + format_dataset.format(label=label, XorY='X', settype='train')
-    config_data[label]['train']['Y'] = data_base_path + format_dataset.format(label=label, XorY='Y', settype='train')
+for labels_data, settype in [(labels_train_data, 'train'),(labels_dev_data, 'dev'),(labels_test_data, 'test')]:
+    for label in labels_data:
+        config_data[label][settype]['X'] = data_base_path + format_dataset.format(label=label, XorY='X', settype=settype)
+        config_data[label][settype]['Y'] = data_base_path + format_dataset.format(label=label, XorY='Y', settype=settype)     
 
-for label in labels_test_data:
-    config_data[label]['test']['X'] = data_base_path + format_dataset.format(label=label, XorY='X', settype='test')
-    config_data[label]['test']['Y'] = data_base_path + format_dataset.format(label=label, XorY='Y', settype='test')
+# for label in labels_train_data:
+#     config_data[label]['train']['X'] = data_base_path + format_dataset.format(label=label, XorY='X', settype='train')
+#     config_data[label]['train']['Y'] = data_base_path + format_dataset.format(label=label, XorY='Y', settype='train')
+
+# for label in labels_test_data:
+#     config_data[label]['test']['X'] = data_base_path + format_dataset.format(label=label, XorY='X', settype='test')
+#     config_data[label]['test']['Y'] = data_base_path + format_dataset.format(label=label, XorY='Y', settype='test')
