@@ -5,6 +5,7 @@ import numpy as np
 from utils import score, report, save_model
 from collections import defaultdict
 import pickle
+import ipdb
 
 
 class LSTM_HS(torch.nn.Module):
@@ -17,6 +18,7 @@ class LSTM_HS(torch.nn.Module):
         lstm_layers,
         bidirectional,
         lstm_dropout,
+        lstm_output,
         fc_hidden_size,
         fc_dropout,
         vector_size = 300,
@@ -43,6 +45,9 @@ class LSTM_HS(torch.nn.Module):
             num_layers = lstm_layers,
             dropout = lstm_dropout,
             bidirectional = bidirectional)
+
+        assert lstm_output in ['last','max'], "Only \'last\' and \'max\' are allowed as lstm_output."
+        self.lstm_output = lstm_output
         
         self.fc_1_dropout = torch.nn.Dropout(fc_dropout)
         self.fc_1 = torch.nn.Linear(self.directions * lstm_hidden_size, fc_hidden_size)
@@ -63,12 +68,20 @@ class LSTM_HS(torch.nn.Module):
             X = X.transpose(2,1).transpose(1,0)
             
         X = torch.nn.utils.rnn.pack_padded_sequence(X, lengths)
-        _, (h, _) = self.lstm(X) 
-        # aqui desarmo
-        h = h.view(self.lstm_layers, self.directions, -1, self.lstm_hidden_size)  
-        h = h[-1].transpose(0,1).contiguous()
-        h = h.view(-1, self.directions * self.lstm_hidden_size)
-        ##############
+
+        if self.lstm_output == 'last':
+            _, (h, _) = self.lstm(X) 
+            h = h.view(self.lstm_layers, self.directions, -1, self.lstm_hidden_size)  
+            h = h[-1].transpose(0,1).contiguous()
+            h = h.view(-1, self.directions * self.lstm_hidden_size)
+        elif self.lstm_output == 'max':
+            o, (_, _) = self.lstm(X) 
+            o, _ = torch.nn.utils.rnn.pad_packed_sequence(o)
+            h, _ = torch.max(o, 0)
+        else:
+            pass
+
+        
         h = self.fc_1_dropout(h)
         h = self.fc_1(h)
         if self.fc_hidden_size > 1:
