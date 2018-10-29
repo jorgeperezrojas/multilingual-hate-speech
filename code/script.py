@@ -37,6 +37,7 @@ def main(scenarios_file, device, epochs, patience, verbose, hyper_params_file):
         model.train(train_loader, dev_loader, epochs=epochs, verbose=verbose)
         best_model = load_model(model_path, scenario)
         save_summary(results_file, scenario, model, best_model, train_loader, dev_loader, test_loader, verbose=1)
+        save_history(history_path, scenario, model)
         print('Finish training scenario:',scenario)
 
 
