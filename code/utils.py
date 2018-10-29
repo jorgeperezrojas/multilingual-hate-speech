@@ -67,6 +67,7 @@ def save_history(history_path, scenario, model):
 
 def save_config(model, hps, config_file):
     with open(config_file, 'w') as outfile:
+        outfile.write(str(hps) + '\n\n')
         outfile.write('vector_size:' + str(vector_size) + '\n')
         outfile.write('batch_size:' + str(hps['batch_size']) + '\n')
         outfile.write('limit_vectors:' + str(hps['limit_vectors']) + '\n')
