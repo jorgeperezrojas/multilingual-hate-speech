@@ -95,7 +95,8 @@ class DAN_HS(torch.nn.Module):
         input_dropout=0.0,
         hidden_sizes=[],
         dropouts=None,
-        vector_size = 300,
+        include_extremes=True,
+        vector_size=300,
         **kwargs
     ):
         super(DAN_HS, self).__init__()
@@ -104,6 +105,10 @@ class DAN_HS(torch.nn.Module):
             assert len(hidden_sizes) == len(dropouts), 'dropouts and hidden_sizes lengths must coincide.'
         else:
             dropouts = [0.0 for _ in hidden_sizes]
+
+        self.include_extremes = include_extremes
+        if self.include_extremes:
+            vector_size = 3*vector_size
 
         dims = [vector_size] + hidden_sizes
         dos = [input_dropout] + dropouts
@@ -133,12 +138,18 @@ class DAN_HS(torch.nn.Module):
         # asume time-step first (L,N,C)
 
         # take the sum over time-step
-        X = torch.sum(X, 0)
-
+        S = torch.sum(X, 0)
         # divide by the lengths to obtain the average
-        X = X / lengths.view(-1,1)
+        A = S / lengths.view(-1,1)
 
-        h = X
+        # keep max and min besides just average
+        if self.include_extremes:
+            M, _ = torch.max(X, 0)
+            m, _ = torch.min(X, 0)
+            h = torch.cat([A, M, m], 1)
+        else:
+            h = A
+
         # pass throw the hidden layers
         for do_layer, fc_layer in zip(self.do_layers, self.fc_layers):
             h = do_layer(h)
