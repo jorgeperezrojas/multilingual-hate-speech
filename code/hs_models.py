@@ -136,7 +136,7 @@ class DAN_HS(torch.nn.Module):
         X = torch.sum(X, 0)
 
         # divide by the lengths to obtain the average
-        X = X / lengths.view(-1,1).float()
+        X = X / lengths.view(-1,1)
 
         h = X
         # pass throw the hidden layers
@@ -204,7 +204,7 @@ class HS_Model():
                 self.net = self.net.to(self.device).train()
                 self.optimizer.zero_grad()
                 X, Y, lengths = batch
-                X, Y, lengths = X.to(self.device), Y.to(self.device), lengths.to(self.device)
+                X, Y, lengths = X.to(self.device), Y.to(self.device), lengths.float().to(self.device)
                 Y_pred = self.net(X, lengths)
                 loss = self.criterion(Y_pred, Y)
                 loss.backward()
