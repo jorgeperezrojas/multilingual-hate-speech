@@ -204,7 +204,7 @@ class HS_Model():
                 self.net = self.net.to(self.device).train()
                 self.optimizer.zero_grad()
                 X, Y, lengths = batch
-                X, Y = X.to(self.device), Y.to(self.device)
+                X, Y, lengths = X.to(self.device), Y.to(self.device), lengths.to(self.device)
                 Y_pred = self.net(X, lengths)
                 loss = self.criterion(Y_pred, Y)
                 loss.backward()
