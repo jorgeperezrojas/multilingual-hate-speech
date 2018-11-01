@@ -245,7 +245,7 @@ class HS_Model():
             for batch in data_loader:
                 self.net = self.net.to(self.device).eval()
                 X, Y, lengths = batch
-                X, Y = X.to(self.device), Y.to(self.device)
+                X, Y, lengths = X.to(self.device), Y.to(self.device), lengths.float().to(self.device)
                 Y_pred = self.net(X, lengths)
                 running_loss += self.criterion(Y_pred, Y).item()
                 running_acc += score(Y_pred, Y)
@@ -260,7 +260,7 @@ class HS_Model():
             for batch in data_loader:
                 self.net = self.net.to(self.device).eval()
                 X, Y, lengths = batch
-                X, Y = X.to(self.device), Y.to(self.device)
+                X, Y, lengths = X.to(self.device), Y.to(self.device), lengths.float().to(self.device)
                 Y_pred = self.net(X, lengths)
                 Ys.append(Y)
                 Ypreds.append(Y_pred)
