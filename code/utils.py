@@ -122,7 +122,7 @@ def pad_collate(batch):
     batch.sort(key=lambda b: len(b[0]), reverse=True)
     X_seq, Y_seq = zip(*batch)
     X_seq = [torch.tensor(X) for X in X_seq]
-    lengths = [len(X) for X in X_seq]
+    lengths = torch.tensor([len(X) for X in X_seq])
     X = torch.nn.utils.rnn.pad_sequence(X_seq)
     Y = torch.FloatTensor(Y_seq).view(-1,1)
     return (X, Y, lengths)

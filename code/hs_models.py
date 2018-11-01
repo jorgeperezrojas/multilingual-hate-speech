@@ -30,7 +30,7 @@ class LSTM_HS(torch.nn.Module):
         self.directions = 2 if bidirectional else 1
         self.fc_hidden_size = fc_hidden_size
 
-        self.inptu_dropout = torch.nn.Dropout(input_dropout)
+        self.input_dropout = torch.nn.Dropout(input_dropout)
 
         self.initial_avg = initial_avg
         if self.initial_avg:
@@ -58,7 +58,7 @@ class LSTM_HS(torch.nn.Module):
     def forward(self, X, lengths):
         # asume que el input es una sequencia con padding
         # asume time-step first (L,N,C)
-        X = self.inptu_dropout(X)
+        X = self.input_dropout(X)
 
         if self.initial_avg:
             # rearrange to apply 1d average (L,N,C) --> (N,C,L)
@@ -89,16 +89,77 @@ class LSTM_HS(torch.nn.Module):
             h = self.fc_2(h)
         return h
 
+class DAN_HS(torch.nn.Module):
+
+    def __init__(self,
+        input_dropout=0.0,
+        hidden_sizes=[],
+        dropouts=None,
+        vector_size = 300,
+        **kwargs
+    ):
+        super(DAN_HS, self).__init__()
+        
+        if dropouts != None:
+            assert len(hidden_sizes) == len(dropouts), 'dropouts and hidden_sizes lengths must coincide.'
+        else:
+            dropouts = [0.0 for _ in hidden_sizes]
+
+        dims = [vector_size] + hidden_sizes
+        dos = [input_dropout] + dropouts
+        
+        self.fc_layers = []
+        self.do_layers = []
+
+        for i in range(len(dims) - 1):
+            do = torch.nn.Dropout(dos[i])
+            self.do_layers.append(do)
+            fc = torch.nn.Linear(dims[i], dims[i+1])
+            self.fc_layers.append(fc)
+
+        last_do = torch.nn.Dropout(dos[-1])
+        last_fc = torch.nn.Linear(dims[-1],1)
+
+        self.do_layers.append(last_do)
+        self.fc_layers.append(last_fc)
+
+        # register the sub modules
+        self.fc_layers = torch.nn.ModuleList(self.fc_layers)
+        # ipdb.set_trace()
+        
+     
+
+    def forward(self, X, lengths):
+        # asume time-step first (L,N,C)
+
+        # take the sum over time-step
+        X = torch.sum(X, 0)
+
+        # divide by the lengths to obtain the average
+        X = X / lengths.view(-1,1).float()
+
+        h = X
+        # pass throw the hidden layers
+        for do_layer, fc_layer in zip(self.do_layers, self.fc_layers):
+            h = do_layer(h)
+            h = fc_layer(h)
+        return h
+
 
 class HS_Model():
     def __init__(self, max_sequence_len=None, device='cpu', patience=None, 
             save_best=False, scenario=None, model_path=None, optimizer='sgd',
-            lr=0.01, momentum=0.9, weight_decay=0, **kwargs):    
+            lr=0.01, momentum=0.9, weight_decay=0, net_type='lstm', **kwargs):    
         self.device = torch.device(device)
         self.max_sequence_len = max_sequence_len
 
         # net
-        self.net = LSTM_HS(**kwargs)
+        if net_type == 'lstm':
+            self.net = LSTM_HS(**kwargs)
+        elif net_type == 'dan':
+            self.net = DAN_HS(**kwargs)
+        else:
+            assert False, 'Only lstm and dan net are currently supported.'
 
         # optimizer
         if optimizer == 'sgd':
