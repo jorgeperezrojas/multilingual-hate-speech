@@ -15,7 +15,19 @@ languages = ['es', 'en', 'it']
 
 labels_train_data = ['es', 'en', 'it', 'es_se', 'en_se']
 labels_dev_data = ['es_se', 'en_se']
-labels_test_data = ['es', 'en', 'it', 'es_manual']
+labels_test_data = [
+    'es', 
+    'en', 
+    'it', 
+    'es_manual',
+    'es-en',
+    'es-en_manual',
+    'it-en',
+    'en-es',
+    'it-es',
+    'en-it',
+    'es-it',
+]
 
 labels_to_language = {
     'es': 'es',
@@ -23,7 +35,14 @@ labels_to_language = {
     'it': 'it',
     'es_manual': 'es',
     'es_se': 'es',
-    'en_se': 'en'
+    'en_se': 'en',
+    'es-en': 'en',
+    'es-en_manual': 'en',
+    'it-en': 'en',
+    'en-es': 'es',
+    'it-es': 'es',
+    'en-it': 'it',
+    'es-it': 'it',
 }
 
 

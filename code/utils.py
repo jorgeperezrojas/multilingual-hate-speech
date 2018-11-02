@@ -104,6 +104,7 @@ def save_summary(results_file, scenario, model, best_model, train_loader, dev_lo
         if verbose >= 1:
             print()
         outfile.write(prefix + '\n')
+
         
 
 
@@ -142,6 +143,15 @@ class MVSDataLoaderFactory():
         language_file = vector_files[language]
         dataset = MVSDataset(X_file, Y_file, language, language_file)
         return dataset
+
+    def data_loaders_for_eval(self, labels=None, set_type='test'):
+        list_of_data_loaders = []
+        for label in labels:
+            dataset = self.__data_set_from_label(label, set_type)
+            data_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, collate_fn=pad_collate)
+            list_of_data_loaders.append(data_loader)
+        return list_of_data_loaders
+
 
     def data_loaders_from_scenario(self, scenario={'train':['es'], 'test':['es']}):
        
