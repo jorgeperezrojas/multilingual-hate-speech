@@ -1,0 +1,20 @@
+{
+    'net_type': 'lstm',
+    'batch_size': 32,
+    'limit_vectors': 500000,
+
+    'optimizer': 'adam',
+    'lr': 0.01,
+    'momentum': 0.9,
+    'weight_decay': 0,
+    'input_dropout': 0.2,
+    'initial_avg': True,
+    'avg_size': 5,
+    'lstm_hidden_size': 16,
+    'lstm_layers': 2,
+    'bidirectional': True,
+    'lstm_dropout': 0.2,
+    'lstm_output': 'max',
+    'fc_hidden_size': 16,
+    'fc_dropout': 0.2    
+}
