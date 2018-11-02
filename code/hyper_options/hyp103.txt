@@ -1,0 +1,14 @@
+{
+    'net_type': 'dan',
+    'batch_size': 16,
+    'limit_vectors': 500000,
+
+    'optimizer': 'adam',
+    'lr': 0.01,
+    'momentum': 0.9,
+    'weight_decay': 0,
+    'input_dropout': 0.2,
+    'hidden_sizes': [128,64],
+    'dropouts': [0.2,0.2],
+    'include_extremes': True,
+}
