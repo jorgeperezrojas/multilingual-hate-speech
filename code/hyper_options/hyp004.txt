@@ -8,7 +8,7 @@
     'momentum': 0.9,
     'weight_decay': 0,
     'input_dropout': 0.2,
-    'initial_avg': True,
+    'initial_avg': False,
     'avg_size': 5,
     'lstm_hidden_size': 32,
     'lstm_layers': 2,
