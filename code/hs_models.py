@@ -67,6 +67,8 @@ class LSTM_HS(torch.nn.Module):
             # rearrange again for the input of the recurrent layer (N,C,L) --> (L,N,C)
             X = X.transpose(2,1).transpose(1,0)
             
+        # ensure that lengths is a list
+        lengths = [l for l in lengths]
         X = torch.nn.utils.rnn.pack_padded_sequence(X, lengths)
 
         if self.lstm_output == 'last':
