@@ -9,6 +9,7 @@ import pickle
 import sys
 from datetime import datetime
 from config_data import vector_size
+import ipdb
 
 _hash_len = 8
 
@@ -215,6 +216,16 @@ class MVSDataset(Dataset):
     __multi_ling_files = {}
     __vector_size = None
     limit_vectors = None
+    __options_for_feminazi = {
+        'es': ['mujer', 'feminista', 'chica', ''], 
+        'en': ['woman', 'feminist', 'girl', ''],
+        'it': ['ragazza', 'femminista', 'donna', '']
+    }
+    __options_for_feminazis = {
+        'es': ['mujeres', 'feministas', 'chicas', ''],
+        'en': ['women', 'feminists', 'girls', ''],
+        'it': ['ragazze','femministe', 'donne', '']
+    }
 
     def __init__(self, X_file, Y_file, language, 
         language_file=None, max_sequence_len=None, verbose=True):
@@ -232,11 +243,19 @@ class MVSDataset(Dataset):
     def __len__(self):
         return len(self.raw_X)
 
+    def __process_particular_words(self, word):
+        if word == 'feminazi':
+            word = np.random.choice(MVSDataset.__options_for_feminazi[self.language])
+        elif word == 'feminazis':
+            word = np.random.choice(MVSDataset.__options_for_feminazis[self.language])
+        return word
+
     def __getitem__(self, idx):
         x, y = self.raw_X[idx], self.raw_Y[idx]
         x = x[:self.max_sequence_len]
         vec_list = []
         for token in x:
+            token = self.__process_particular_words(token)
             if token in self.vectors:
                 vec_list.append(torch.from_numpy(self.vectors[token]))
             else:
